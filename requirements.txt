@@ -1,0 +1,14 @@
+subprocess32==3.5.4
+argparse==1.4.0
+python-dotenv==0.19.1
+json5==0.9.5
+time==1.0
+urllib3==1.26.7
+
+concurrent-futures==3.0.5
+rich==10.12.0
+
+reportlab==3.6.0
+Jinja2==3.0.3
+
+regex==2021.8.3
