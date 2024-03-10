@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vulnerability Scan Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #64b5f6;  
+            --bg-color: #212121;
+            --text-color: #ffffff;
+            --accent-color: #ff4081;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Open Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(to right, #64b5f6, #1976d2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .header img {
+            height: 60px;
+            margin-right: 20px;
+            animation: floatLogo 2s infinite alternate;
+        }
+
+        @keyframes floatLogo {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-10px);
+            }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-color);  
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            margin-top: 30px;
+        }
+
+        .section {
+            padding: 20px;
+            background-color: #424242;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            margin: 20px auto;
+            max-width: 900px;
+            animation: fadeIn 1s;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tool {
+            font-weight: 600;
+            color: #E91E63;
+        }
+
+        .vulnerable, .not-vulnerable {
+            padding: 5px 10px;
+            border-radius: 5px;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.05);
+            }
+        }
+
+        pre {
+            background-color: #eee; 
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+            color: #000;
+        }
+
+        .recommendations {
+            margin-top: 30px;
+            text-align: center;
+            animation: slideInLeft 1s;
+        }
+
+        @keyframes slideInLeft {
+            0% {
+                transform: translateX(-50%);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .recommendations p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="https://webz.io/wp-content/uploads/2022/06/img-xss-1-1.png" alt="Logo">
+        <h1>Vulnerability Scan Report</h1>
+    </div>
+    
+    {% for tool, output in tool_outputs.items() %}
+    <div id="{{ tool }}-output" class="section">
+        <h2>{{ tool.upper() }} Output</h2>
+        <pre>{{ output }}</pre>
+    </div>
+    {% endfor %}    
+
+    <div class="section recommendations">
+        <h2>AI Recommendations:</h2>
+        <p>{{ ai_response }}</p>
+    </div>
+</body>
+</html>
