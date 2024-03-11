@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Vulnerability Scan Report</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #64b5f6;  
-            --bg-color: #212121;
-            --text-color: #ffffff;
-            --accent-color: #ff4081;
+            --primary-color: #64b5f6;
+            --bg-color: #000033;
+            --text-color: #ADD8E6;
+            --accent-color: #d6d7d8;
+            --secondary-color: #D3D3D3;
         }
-        
+
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: 'Open Sans', sans-serif;
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
         }
 
         .header {
@@ -28,6 +29,7 @@
             padding: 20px;
             background: linear-gradient(to right, #64b5f6, #1976d2);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 1s;
         }
 
         .header img {
@@ -40,17 +42,49 @@
             0% {
                 transform: translateY(0);
             }
+
             100% {
                 transform: translateY(-10px);
+            }
+        }
+
+        .star-field {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background-color: #19101b;
+        }
+
+        .star {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            background-color: #766396;
+            border-radius: 50%;
+            animation: twinkling 3s infinite;
+        }
+
+        @keyframes twinkling {
+            0% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
             }
         }
 
         h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            color: var(--text-color);  
+            color: var(--text-color);
             text-align: center;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: slideInLeft 1s;
         }
 
         h2 {
@@ -58,16 +92,22 @@
             font-weight: 600;
             color: var(--accent-color);
             margin-top: 30px;
+            animation: slideInRight 1s;
         }
 
         .section {
             padding: 20px;
-            background-color: #424242;
+            background-color: rgba(66, 66, 66, 0.5);
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             margin: 20px auto;
-            max-width: 900px;
+            max-width: 1200px;
             animation: fadeIn 1s;
+        }
+        .content-container {
+            max-height: 60vh;
+            overflow-y: auto; 
+            padding: 20px;
         }
 
         @keyframes fadeIn {
@@ -75,6 +115,7 @@
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             100% {
                 opacity: 1;
                 transform: translateY(0);
@@ -86,7 +127,8 @@
             color: #E91E63;
         }
 
-        .vulnerable, .not-vulnerable {
+        .vulnerable,
+        .not-vulnerable {
             padding: 5px 10px;
             border-radius: 5px;
             animation: pulse 1s infinite alternate;
@@ -96,13 +138,14 @@
             0% {
                 transform: scale(1);
             }
+
             100% {
                 transform: scale(1.05);
             }
         }
 
         pre {
-            background-color: #eee; 
+            background-color: #eee;
             padding: 10px;
             border-radius: 5px;
             overflow-x: auto;
@@ -121,6 +164,19 @@
                 transform: translateX(-50%);
                 opacity: 0;
             }
+
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInRight {
+            0% {
+                transform: translateX(50%);
+                opacity: 0;
+            }
+
             100% {
                 transform: translateX(0);
                 opacity: 1;
@@ -134,22 +190,56 @@
         }
     </style>
 </head>
-<body>
-    <div class="header">
-        <img src="https://webz.io/wp-content/uploads/2022/06/img-xss-1-1.png" alt="Logo">
-        <h1>Vulnerability Scan Report</h1>
-    </div>
-    
-    {% for tool, output in tool_outputs.items() %}
-    <div id="{{ tool }}-output" class="section">
-        <h2>{{ tool.upper() }} Output</h2>
-        <pre>{{ output }}</pre>
-    </div>
-    {% endfor %}    
 
-    <div class="section recommendations">
-        <h2>AI Recommendations:</h2>
-        <p>{{ ai_response }}</p>
+<body>
+    <div class="star-field">
+        <div class="header">
+            <img src="https://webz.io/wp-content/uploads/2022/06/img-xss-1-1.png" alt="Logo">
+            <h1>Vulnerability Scan Report</h1>
+        </div>
+        
+        <div class="content-container">
+            {% for tool, output in tool_outputs.items() %}
+            <div id="{{ tool }}-output" class="section">
+                <h2>{{ tool.upper() }} Output</h2>
+                <pre>{{ output }}</pre>
+            </div>
+            {% endfor %}
+
+            <div class="section recommendations">
+                <h2>AI Recommendations:</h2>
+                <p>{{ ai_response }}</p>
+            </div>
+        </div>
     </div>
+    <script>
+        const numStars = 1000;
+        const starField = document.querySelector(".star-field");
+        const totalAnimationDuration = 10;
+
+        for (let i = 0; i < numStars; i++) {
+            const star = document.createElement("div");
+            star.classList.add("star");
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+
+            star.style.opacity = Math.random();
+
+            if (Math.random() < 0.1) {
+                star.classList.add("colored-star");
+                const colors = ["yellow", "blue", "green", "purple", "pink"];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                star.style.backgroundColor = randomColor;
+            }
+
+            star.style.animationDuration = `${Math.random() * 3 + 1}s`;
+
+            star.style.animationDelay = `${Math.random() * totalAnimationDuration}s`;
+
+            starField.appendChild(star);
+        }
+
+    </script>
 </body>
+
 </html>
