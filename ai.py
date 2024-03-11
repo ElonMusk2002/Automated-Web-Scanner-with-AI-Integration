@@ -209,17 +209,14 @@ elif args.profile == "paranoid":
 
 def run_tool(tool, outfile):
     try:
-        if tool == "Nuclei":
-            cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + ["-u", target, "-o", outfile]
-        else:
-            cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
+        cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
         print(f"Running {tool}...")
         if args.disable != tool:
-            if tool == "Nuclei":
-                subprocess.run(cmd, check=True)
-            else:
-                with open(outfile, "w") as output_file:
-                    subprocess.run(cmd, stdout=output_file, check=True)  # REPLACE WITH THIS iF YOU PROVIDE PROXIES   subprocess.run(cmd, stdout=output_file, check=True, proxies=proxies)
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            with open(outfile, "w") as output_file:
+                output_file.write(result.stdout)
+            if result.returncode != 0:
+                print(f"Error running {tool}: {result.stderr}")
         else:
             print(f"Tool {tool} is disabled.")
     except FileNotFoundError:
@@ -229,8 +226,6 @@ def run_tool(tool, outfile):
                 print(f"Created {outfile} for the custom tool.")
         else:
             print(f"Tool {tool} is disabled.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error running {tool}: {e}")
     except Exception as e:
         print(f"An error occurred while running {tool}: {e}")
 
