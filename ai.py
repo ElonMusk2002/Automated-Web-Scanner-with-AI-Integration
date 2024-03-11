@@ -26,7 +26,7 @@ console.print(
               
               
               
-[bold red]Automated Vulnerability Scanner v1.2[/bold red]
+[bold red]Automated Vulnerability Scanner v1.3[/bold red]
 [blue]Created by {{name}}[/blue]
               
 _______           _______ _________ _______  _______             _______  ______     _______  _______  _______  _        _        _______  _______ 
