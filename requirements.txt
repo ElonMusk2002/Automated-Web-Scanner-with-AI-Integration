@@ -12,3 +12,4 @@ reportlab==3.6.0
 Jinja2==3.0.3
 
 regex==2021.8.3
+virustotal-python==1.0.2
