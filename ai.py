@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from colored import fg, bg, attr
 from llamaapi import LlamaAPI
+import virustotal_python
 import concurrent.futures
 from rich.console import Console
 from rich.table import Table
@@ -26,8 +27,9 @@ console.print(
               
               
               
-[bold red]Automated Vulnerability Scanner v1.3[/bold red]
+[bold red]Automated Vulnerability Scanner v1.4[/bold red]
 [blue]Created by {{name}}[/blue]
+[blue]For xss.is[/blue]
               
 _______           _______ _________ _______  _______             _______  ______     _______  _______  _______  _        _        _______  _______ 
 (  ____ \|\     /|(  ____ \\__   __/(  ___  )(       )  |\     /|(  ____ \(  ___ \   (  ____ \(  ____ \(  ___  )( (    /|( (    /|(  ____ \(  ____ )
@@ -55,7 +57,7 @@ TOOLS = {
     "nmap": {"cmd": "nmap", "args": ["-T4", "-F", "--script=vulscan/vulscan.nse"], "output": "nmap.txt"},
     "Nuclei": {
         "cmd": "nuclei",
-        "args": ["-t", "cves", "-o", "nuclei.txt" "-u"],
+        "args": ["-t", "cves", "-o", "nuclei.txt", "-u"],
         "output": "nuclei.txt",
     },
     "sqlmap": {
@@ -66,6 +68,21 @@ TOOLS = {
     "sslscan": {"cmd": "sslscan", "args": ["--no-failed"], "output": "sslscan.txt"},
     "dnsrecon": {"cmd": "dnsrecon", "args": ["-d"], "output": "dnsrecon.txt"},
 }
+
+def check_and_install_tools():
+    for tool, details in TOOLS.items():
+        try:
+            subprocess.run([details["cmd"], "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            console.print(f"[green]{tool} is installed ✓[/green]")
+        except subprocess.CalledProcessError:
+            try:
+                console.print(f"[yellow]Tool '{tool}' not found. Attempting to install...[/yellow]")
+                subprocess.run(["sudo", "apt-get", "install", "-y", tool], check=True)
+                console.print(f"[green]Tool '{tool}' has been installed successfully.[/green]")
+            except subprocess.CalledProcessError as e:
+                console.print(f"[red]Failed to install '{tool}': {e}[/red]")
+
+check_and_install_tools()
 
 parser = argparse.ArgumentParser(
     description="Web Vulnerability Scanner v1.1",
@@ -216,7 +233,7 @@ def run_tool(tool, outfile):
             with open(outfile, "w") as output_file:
                 output_file.write(result.stdout)
             if result.returncode != 0:
-                print(f"Error running {tool}: {result.stderr}")
+                console.print(f"[red]Error running {tool}: {result.stderr}[/red]")
         else:
             print(f"Tool {tool} is disabled.")
     except FileNotFoundError:
@@ -252,18 +269,49 @@ def add_custom_tool():
     except Exception as e:
         print(f"Error adding custom tool: {e}")
 
+def check_reputation(target, api_key):
+    with virustotal_python.Virustotal(api_key) as vtotal:
+        # Check domain reputation
+        if '.' in target:
+            report = vtotal.request(f"domains/{target}")
+        else:
+            report = vtotal.request(f"ip_addresses/{target}")
 
+        with open('reputation.txt', 'w') as f:
+            json.dump(report.data, f, indent=4)
+
+        # Extract reputation score
+        last_analysis_stats = report.data['attributes']['last_analysis_stats']
+        malicious = last_analysis_stats['malicious']
+        harmless = last_analysis_stats['harmless']
+        total = malicious + harmless
+        reputation_score = malicious / total if total > 0 else 0
+
+        return reputation_score, report
 def scan():
+    # Prompt for reputation scan
+    user_input = input("Do you want to perform a reputation scan? (yes/no): ")
+    if user_input.lower() == "yes":
+        api_key = input("Please enter your VirusTotal API key: ")
+        reputation_score, report = check_reputation(target, api_key)
+        print(f"Reputation Score: {reputation_score:.2f}. Full report: reputation.txt")
+        if reputation_score >= 0.5:
+            print("The target has a high reputation score of {:.2f}. It might be useless to further continue.".format(reputation_score))
+            user_input = input("Do you want to proceed with a full scan? (yes/no): ")
+            if user_input.lower() != "yes":
+                print("Exiting the scan process.")
+                exit(0)
+
     findings = {}
 
     with Progress(
         "[progress.description]{task.description}",
-        BarColumn(),
+        BarColumn(bar_width=40, complete_style="bright_green", finished_style="dim"),
         "[progress.percentage]{task.percentage:>3.0f}%",
         TimeRemainingColumn(),
         console=console,
     ) as progress:
-        task = progress.add_task("[cyan]Scanning...", total=len(TOOLS))
+        task = progress.add_task("[blue]Scanning...", total=len(TOOLS))
 
         print(fg("cyan") + f"\n[*] Starting vulnerability scan on {target}" + attr(0))
         if args.aggro:
