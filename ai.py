@@ -55,8 +55,16 @@ _______           _______ _________ _______  _______             _______  ______
 
 TOOLS = {
     "nmap": {"cmd": "nmap", "args": ["-T4", "-F"], "output": "nmap.txt"},
-    "Nuclei": {"cmd": "nuclei", "args": ["-t", "cves", "-o", "nuclei.txt", "-u"], "output": "nuclei.txt"},
-    "sqlmap": {"cmd": "sqlmap", "args": ["--batch", "--random-agent", "--level", "5", "--risk", "3", "-u"], "output": "sqlmap.txt"},
+    "Nuclei": {
+        "cmd": "nuclei",
+        "args": ["-t", "cves", "-o", "nuclei.txt", "-u"],
+        "output": "nuclei.txt",
+    },
+    "sqlmap": {
+        "cmd": "sqlmap",
+        "args": ["--batch", "--random-agent", "--level", "5", "--risk", "3", "-u"],
+        "output": "sqlmap.txt",
+    },
     "sslscan": {"cmd": "sslscan", "args": ["--no-failed"], "output": "sslscan.txt"},
     "dnsrecon": {"cmd": "dnsrecon", "args": ["-d"], "output": "dnsrecon.txt"},
 }
@@ -66,32 +74,56 @@ NUCLEI_TEMPLATES = {
     "common_web_vulnerabilities": ["-t", "common-web-vulnerabilities"],
 }
 
+
 def check_and_install_tools():
     for tool, details in TOOLS.items():
         try:
-            subprocess.run([details["cmd"], "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                [details["cmd"], "--version"],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             console.print(f"[green]{tool} is installed ✓[/green]")
         except subprocess.CalledProcessError:
             try:
-                console.print(f"[yellow]Tool '{tool}' not found. Attempting to install...[/yellow]")
-                subprocess.run(["sudo", "apt-get", "install", "-y", tool], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                console.print(f"[green]Tool '{tool}' has been installed successfully.[/green]")
+                console.print(
+                    f"[yellow]Tool '{tool}' not found. Attempting to install...[/yellow]"
+                )
+                subprocess.run(
+                    ["sudo", "apt-get", "install", "-y", tool],
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                console.print(
+                    f"[green]Tool '{tool}' has been installed successfully.[/green]"
+                )
             except subprocess.CalledProcessError as e:
                 console.print(f"[red]Failed to install '{tool}': {e}[/red]")
                 exit(1)
 
+
 check_and_install_tools()
 
+
 def add_nse_to_nmap():
-    use_nse = input("Do you want to include NSE scripts in the Nmap scan? (yes/no): ").lower()
-    if use_nse not in ['yes', 'no']:
+    use_nse = input(
+        "Do you want to include NSE scripts in the Nmap scan? (yes/no): "
+    ).lower()
+    if use_nse not in ["yes", "no"]:
         console.print("[red]Invalid input. Please enter 'yes' or 'no'.[/red]")
         return
     if use_nse == "yes":
-        console.print("[bold green]Including NSE scripts in the Nmap scan...[/bold green]")
+        console.print(
+            "[bold green]Including NSE scripts in the Nmap scan...[/bold green]"
+        )
         TOOLS["nmap"]["args"].append("--script=default")
     else:
-        console.print("[bold yellow]NSE scripts will not be included in the Nmap scan.[/bold yellow]")
+        console.print(
+            "[bold yellow]NSE scripts will not be included in the Nmap scan.[/bold yellow]"
+        )
+
 
 parser = argparse.ArgumentParser(
     description="Web Vulnerability Scanner v1.1",
@@ -100,8 +132,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument("target", help="Target URL or IP address")
 
 parser.add_argument(
-    "-a", "--aggro", action="store_true",
-    help="Enable aggressive scan mode, which includes more thorough checks but may take longer."
+    "-a",
+    "--aggro",
+    action="store_true",
+    help="Enable aggressive scan mode, which includes more thorough checks but may take longer.",
 )
 parser.add_argument(
     "-d",
@@ -117,10 +151,11 @@ parser.add_argument(
 )
 parser.add_argument("-p", "--prompt", help="Custom AI prompt")
 parser.add_argument(
-    "-pr", "--profile",
+    "-pr",
+    "--profile",
     choices=["friendly", "special", "hacker", "paranoid"],
     default="professional",
-    help="Choose an AI profile: professional, casual, edgy"
+    help="Choose an AI profile: professional, casual, edgy",
 )
 parser.add_argument(
     "-s",
@@ -130,9 +165,7 @@ parser.add_argument(
 parser.add_argument(
     "-l", "--load-config", help="Load a saved scan configuration with the given name"
 )
-parser.add_argument(
-    "--nuclei-template", help="Specify a Nuclei template for scanning"
-)
+parser.add_argument("--nuclei-template", help="Specify a Nuclei template for scanning")
 
 args = parser.parse_args()
 target = urlparse(args.target).netloc
@@ -176,7 +209,9 @@ def load_configuration(config_name):
         required_keys = ["aggro", "ai", "profile"]
         for key in required_keys:
             if key not in config:
-                console.print(f"[red]Missing required key '{key}' in configuration file.[/red]")
+                console.print(
+                    f"[red]Missing required key '{key}' in configuration file.[/red]"
+                )
                 exit(1)
         console.print(f"Configuration loaded from {config_name}")
         return config
@@ -248,9 +283,18 @@ elif args.profile == "paranoid":
 if args.profile is None:
     args.profile = "professional"
 
+
 def run_tool(tool, outfile):
     if tool == "Nuclei" and args.nuclei_template:
-        cmd = [TOOLS[tool]["cmd"], "-t", args.nuclei_template, "-o", outfile, "-u", target]
+        cmd = [
+            TOOLS[tool]["cmd"],
+            "-t",
+            args.nuclei_template,
+            "-o",
+            outfile,
+            "-u",
+            target,
+        ]
     else:
         cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
     try:
@@ -260,8 +304,10 @@ def run_tool(tool, outfile):
             if tool == "custom":
                 cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
                 print(f"Running {tool}...")
-                with open(outfile, 'w') as output_file:
-                    subprocess.run(cmd, stdout=output_file, stderr=output_file, text=True)
+                with open(outfile, "w") as output_file:
+                    subprocess.run(
+                        cmd, stdout=output_file, stderr=output_file, text=True
+                    )
             else:
                 cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
                 result = subprocess.run(cmd, capture_output=True, text=True)
@@ -278,6 +324,7 @@ def run_tool(tool, outfile):
             print(f"Tool {tool} is disabled.")
     except Exception as e:
         print(f"An error occurred while running {tool}: {e}")
+
 
 def handle_output(outfile):
     # Read the output file and extract any vulnerabilities found
@@ -299,29 +346,36 @@ def add_custom_tool():
         custom_cmd = input(f"Enter the command for {custom_tool}: ")
         custom_url = input(f"Enter the URL to scan with {custom_tool}: ")
         custom_output = input(f"Enter the desired output file name for {custom_tool}: ")
-        TOOLS[custom_tool] = {"cmd": custom_cmd.split(), "args": [custom_url], "output": custom_output}
+        TOOLS[custom_tool] = {
+            "cmd": custom_cmd.split(),
+            "args": [custom_url],
+            "output": custom_output,
+        }
     except Exception as e:
         print(f"Error adding custom tool: {e}")
+
 
 def check_reputation(target, api_key):
     with virustotal_python.Virustotal(api_key) as vtotal:
         # Check domain reputation
-        if '.' in target:
+        if "." in target:
             report = vtotal.request(f"domains/{target}")
         else:
             report = vtotal.request(f"ip_addresses/{target}")
 
-        with open('reputation.txt', 'w') as f:
+        with open("reputation.txt", "w") as f:
             json.dump(report.data, f, indent=4)
 
         # Extract reputation score
-        last_analysis_stats = report.data['attributes']['last_analysis_stats']
-        malicious = last_analysis_stats['malicious']
-        harmless = last_analysis_stats['harmless']
+        last_analysis_stats = report.data["attributes"]["last_analysis_stats"]
+        malicious = last_analysis_stats["malicious"]
+        harmless = last_analysis_stats["harmless"]
         total = malicious + harmless
         reputation_score = malicious / total if total > 0 else 0
 
         return reputation_score, report
+
+
 def scan():
     # Prompt for reputation scan
     user_input = input("Do you want to perform a reputation scan? (yes/no): ")
@@ -330,7 +384,11 @@ def scan():
         reputation_score, report = check_reputation(target, api_key)
         print(f"Reputation Score: {reputation_score:.2f}. Full report: reputation.txt")
         if reputation_score >= 0.5:
-            print("The target has a high reputation score of {:.2f}. It might be useless to further continue.".format(reputation_score))
+            print(
+                "The target has a high reputation score of {:.2f}. It might be useless to further continue.".format(
+                    reputation_score
+                )
+            )
             user_input = input("Do you want to proceed with a full scan? (yes/no): ")
             if user_input.lower() != "yes":
                 print("Exiting the scan process.")
@@ -524,7 +582,7 @@ def print_results(findings):
         "high": "bold yellow",
         "medium": "bold cyan",
         "low": "bold green",
-        "info": "dim"
+        "info": "dim",
     }
 
     for tool in findings:
@@ -558,4 +616,6 @@ if __name__ == "__main__":
     add_nse_to_nmap()
     scan()
     end_time = time.time()
-    console.print(f"Scan completed in {end_time - start_time:.2f} seconds", style="bold cyan")
+    console.print(
+        f"Scan completed in {end_time - start_time:.2f} seconds", style="bold cyan"
+    )
