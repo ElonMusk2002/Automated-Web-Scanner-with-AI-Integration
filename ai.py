@@ -27,7 +27,7 @@ console.print(
               
               
               
-[bold red]Automated Vulnerability Scanner v1.4[/bold red]
+[bold red]Automated Vulnerability Scanner v1.5[/bold red]
 [blue]Created by {{name}}[/blue]
 [blue]For xss.is[/blue]
               
@@ -54,19 +54,16 @@ _______           _______ _________ _______  _______             _______  ______
 )
 
 TOOLS = {
-    "nmap": {"cmd": "nmap", "args": ["-T4", "-F", "--script=vulscan/vulscan.nse"], "output": "nmap.txt"},
-    "Nuclei": {
-        "cmd": "nuclei",
-        "args": ["-t", "cves", "-o", "nuclei.txt", "-u"],
-        "output": "nuclei.txt",
-    },
-    "sqlmap": {
-        "cmd": "sqlmap",
-        "args": ["--batch", "--random-agent", "--level", "5", "--risk", "3", "-u"],
-        "output": "sqlmap.txt",
-    },
+    "nmap": {"cmd": "nmap", "args": ["-T4", "-F"], "output": "nmap.txt"},
+    "Nuclei": {"cmd": "nuclei", "args": ["-t", "cves", "-o", "nuclei.txt", "-u"], "output": "nuclei.txt"},
+    "sqlmap": {"cmd": "sqlmap", "args": ["--batch", "--random-agent", "--level", "5", "--risk", "3", "-u"], "output": "sqlmap.txt"},
     "sslscan": {"cmd": "sslscan", "args": ["--no-failed"], "output": "sslscan.txt"},
     "dnsrecon": {"cmd": "dnsrecon", "args": ["-d"], "output": "dnsrecon.txt"},
+}
+
+NUCLEI_TEMPLATES = {
+    "cve": ["-t", "cves"],
+    "common_web_vulnerabilities": ["-t", "common-web-vulnerabilities"],
 }
 
 def check_and_install_tools():
@@ -77,20 +74,34 @@ def check_and_install_tools():
         except subprocess.CalledProcessError:
             try:
                 console.print(f"[yellow]Tool '{tool}' not found. Attempting to install...[/yellow]")
-                subprocess.run(["sudo", "apt-get", "install", "-y", tool], check=True)
+                subprocess.run(["sudo", "apt-get", "install", "-y", tool], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 console.print(f"[green]Tool '{tool}' has been installed successfully.[/green]")
             except subprocess.CalledProcessError as e:
                 console.print(f"[red]Failed to install '{tool}': {e}[/red]")
+                exit(1)
 
 check_and_install_tools()
+
+def add_nse_to_nmap():
+    use_nse = input("Do you want to include NSE scripts in the Nmap scan? (yes/no): ").lower()
+    if use_nse not in ['yes', 'no']:
+        console.print("[red]Invalid input. Please enter 'yes' or 'no'.[/red]")
+        return
+    if use_nse == "yes":
+        console.print("[bold green]Including NSE scripts in the Nmap scan...[/bold green]")
+        TOOLS["nmap"]["args"].append("--script=default")
+    else:
+        console.print("[bold yellow]NSE scripts will not be included in the Nmap scan.[/bold yellow]")
 
 parser = argparse.ArgumentParser(
     description="Web Vulnerability Scanner v1.1",
     formatter_class=argparse.RawTextHelpFormatter,
 )
 parser.add_argument("target", help="Target URL or IP address")
+
 parser.add_argument(
-    "-a", "--aggro", action="store_true", help="Enable aggressive scan mode"
+    "-a", "--aggro", action="store_true",
+    help="Enable aggressive scan mode, which includes more thorough checks but may take longer."
 )
 parser.add_argument(
     "-d",
@@ -106,11 +117,10 @@ parser.add_argument(
 )
 parser.add_argument("-p", "--prompt", help="Custom AI prompt")
 parser.add_argument(
-    "-pr",
-    "--profile",
+    "-pr", "--profile",
     choices=["friendly", "special", "hacker", "paranoid"],
     default="professional",
-    help="Choose an AI profile: professional, casual, edgy",
+    help="Choose an AI profile: professional, casual, edgy"
 )
 parser.add_argument(
     "-s",
@@ -120,6 +130,10 @@ parser.add_argument(
 parser.add_argument(
     "-l", "--load-config", help="Load a saved scan configuration with the given name"
 )
+parser.add_argument(
+    "--nuclei-template", help="Specify a Nuclei template for scanning"
+)
+
 args = parser.parse_args()
 target = urlparse(args.target).netloc
 
@@ -159,14 +173,22 @@ def load_configuration(config_name):
     try:
         with open(config_name, "r") as config_file:
             config = json.load(config_file)
-        print(f"Configuration loaded from {config_name}")
+        required_keys = ["aggro", "ai", "profile"]
+        for key in required_keys:
+            if key not in config:
+                console.print(f"[red]Missing required key '{key}' in configuration file.[/red]")
+                exit(1)
+        console.print(f"Configuration loaded from {config_name}")
         return config
     except FileNotFoundError:
-        print(f"Configuration file {config_name} not found.")
-        return None
+        console.print(f"[red]Configuration file {config_name} not found.[/red]")
+        exit(1)
+    except json.JSONDecodeError:
+        console.print(f"[red]Error loading configuration: Invalid JSON format.[/red]")
+        exit(1)
     except Exception as e:
-        print(f"Error loading configuration: {e}")
-        return None
+        console.print(f"[red]Error loading configuration: {e}[/red]")
+        exit(1)
 
 
 def generate_html_report(findings, ai_response, output_filename):
@@ -223,19 +245,30 @@ elif args.profile == "hacker":
 elif args.profile == "paranoid":
     selected_profile = paranoid_expert_profile
 
+if args.profile is None:
+    args.profile = "professional"
 
 def run_tool(tool, outfile):
+    if tool == "Nuclei" and args.nuclei_template:
+        cmd = [TOOLS[tool]["cmd"], "-t", args.nuclei_template, "-o", outfile, "-u", target]
+    else:
+        cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
     try:
         cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
         print(f"Running {tool}...")
         if args.disable != tool:
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            with open(outfile, "w") as output_file:
-                output_file.write(result.stdout)
-            if result.returncode != 0:
-                console.print(f"[red]Error running {tool}: {result.stderr}[/red]")
-        else:
-            print(f"Tool {tool} is disabled.")
+            if tool == "custom":
+                cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
+                print(f"Running {tool}...")
+                with open(outfile, 'w') as output_file:
+                    subprocess.run(cmd, stdout=output_file, stderr=output_file, text=True)
+            else:
+                cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                with open(outfile, "w") as output_file:
+                    output_file.write(result.stdout)
+                if result.returncode != 0:
+                    console.print(f"[red]Error running {tool}: {result.stderr}[/red]")
     except FileNotFoundError:
         print(f"The output file {outfile} does not exist.")
         if args.custom and tool == "custom":
@@ -264,8 +297,9 @@ def add_custom_tool():
     try:
         custom_tool = input("Enter the name of your custom tool: ")
         custom_cmd = input(f"Enter the command for {custom_tool}: ")
+        custom_url = input(f"Enter the URL to scan with {custom_tool}: ")
         custom_output = input(f"Enter the desired output file name for {custom_tool}: ")
-        TOOLS[custom_tool] = {"cmd": custom_cmd.split(), "output": custom_output}
+        TOOLS[custom_tool] = {"cmd": custom_cmd.split(), "args": [custom_url], "output": custom_output}
     except Exception as e:
         print(f"Error adding custom tool: {e}")
 
@@ -521,13 +555,7 @@ if __name__ == "__main__":
         if loaded_config:
             for key, value in loaded_config.items():
                 setattr(args, key, value)
-
-    use_vulscan = input("Do you want to include the vulscan.nse script in the nmap scan? (yes/no): ")
-    if use_vulscan.lower() == "yes":
-        if os.path.exists("/usr/share/nmap/scripts/vulscan/vulscan.nse"):
-            TOOLS["nmap"]["args"].append("--script=vulscan/vulscan.nse")
-        else:
-            print("vulscan.nse script not found. Skipping.")
+    add_nse_to_nmap()
     scan()
     end_time = time.time()
     console.print(f"Scan completed in {end_time - start_time:.2f} seconds", style="bold cyan")
