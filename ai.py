@@ -13,11 +13,40 @@ import concurrent.futures
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, BarColumn, TimeRemainingColumn
+from rich.text import Text
 
 from reportlab.lib.pagesizes import letter
 from jinja2 import Environment, FileSystemLoader
 
+import os
+import sys
+import shutil
+
 import re
+
+
+# For Windows systems
+if os.name == 'nt':
+    import ctypes
+
+
+def clear_terminal():
+    # Clear the terminal screen
+    if os.name == 'nt':  # Windows
+        kernel32 = ctypes.windll.kernel32
+        hStdOut = kernel32.GetStdHandle(-11)
+
+        kernel32.SetConsoleTextAttribute(hStdOut, 0x07)
+
+        kernel32.FillConsoleOutputCharacterA(
+            hStdOut, b' ', ctypes.c_ulong(120 * 30),
+            ctypes.pointer(ctypes.c_ulong(0)),
+            ctypes.byref(ctypes.c_ulong(0))
+        )
+    else:
+        os.system('clear')
+
+clear_terminal()
 
 console = Console()
 
@@ -27,9 +56,9 @@ console.print(
               
               
               
-[bold red]Automated Vulnerability Scanner v1.5[/bold red]
-[blue]Created by {{name}}[/blue]
-[blue]For xss.is[/blue]
+[bold red][bold]Automated Vulnerability Scanner v1.6[/bold][/bold red]
+[blue][bold]Created by hackeryaroslav (I'm neither a hacker nor Yaroslav, lol)[/bold][/blue]
+[blue][bold]For xss.is[/bold][/blue]
               
 _______           _______ _________ _______  _______             _______  ______     _______  _______  _______  _        _        _______  _______ 
 (  ____ \|\     /|(  ____ \\__   __/(  ___  )(       )  |\     /|(  ____ \(  ___ \   (  ____ \(  ____ \(  ___  )( (    /|( (    /|(  ____ \(  ____ )
@@ -53,6 +82,11 @@ _______           _______ _________ _______  _______             _______  ______
 """
 )
 
+parser = argparse.ArgumentParser(
+    description="Web Vulnerability Scanner v1.6",
+    formatter_class=argparse.RawTextHelpFormatter,
+)
+
 TOOLS = {
     "nmap": {"cmd": "nmap", "args": ["-T4", "-F"], "output": "nmap.txt"},
     "Nuclei": {
@@ -60,51 +94,27 @@ TOOLS = {
         "args": ["-t", "cves", "-o", "nuclei.txt", "-u"],
         "output": "nuclei.txt",
     },
-    "sqlmap": {
-        "cmd": "sqlmap",
-        "args": ["--batch", "--random-agent", "--level", "5", "--risk", "3", "-u"],
-        "output": "sqlmap.txt",
+    "ZAP": {
+        "cmd": "zap.sh",
+        "args": ["-cmd", "-quickout", "zap.txt"],
+        "output": "zap.txt",
     },
     "sslscan": {"cmd": "sslscan", "args": ["--no-failed"], "output": "sslscan.txt"},
     "dnsrecon": {"cmd": "dnsrecon", "args": ["-d"], "output": "dnsrecon.txt"},
 }
 
-NUCLEI_TEMPLATES = {
-    "cve": ["-t", "cves"],
-    "common_web_vulnerabilities": ["-t", "common-web-vulnerabilities"],
-}
 
-
-def check_and_install_tools():
+def check_tools():
     for tool, details in TOOLS.items():
         try:
-            subprocess.run(
-                [details["cmd"], "--version"],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+            shutil.which(details["cmd"])
             console.print(f"[green]{tool} is installed ✓[/green]")
-        except subprocess.CalledProcessError:
-            try:
-                console.print(
-                    f"[yellow]Tool '{tool}' not found. Attempting to install...[/yellow]"
-                )
-                subprocess.run(
-                    ["sudo", "apt-get", "install", "-y", tool],
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-                console.print(
-                    f"[green]Tool '{tool}' has been installed successfully.[/green]"
-                )
-            except subprocess.CalledProcessError as e:
-                console.print(f"[red]Failed to install '{tool}': {e}[/red]")
-                exit(1)
+        except shutil.Error:
+            console.print(f"[red]Tool '{tool}' is not installed. You can install it from https://www.kali.org/tools/{tool}[/red]")
+            exit(1)
 
 
-check_and_install_tools()
+check_tools()
 
 
 def add_nse_to_nmap():
@@ -125,10 +135,22 @@ def add_nse_to_nmap():
         )
 
 
-parser = argparse.ArgumentParser(
-    description="Web Vulnerability Scanner v1.1",
-    formatter_class=argparse.RawTextHelpFormatter,
-)
+NUCLEI_TEMPLATES = {
+    "cve": ["-t", "cves"],
+    "common_web_vulnerabilities": ["-t", "common-web-vulnerabilities"],
+    "default-credentials": ["-t", "default-credentials"],
+    "exposed-panels": ["-t", "exposed-panels"],
+    "exposures": ["-t", "exposures"],
+    "file-upload": ["-t", "file-upload"],
+    "misconfiguration": ["-t", "misconfiguration"],
+    "path-traversal": ["-t", "path-traversal"],
+    "subdomain-takeover": ["-t", "subdomain-takeover"],
+    "vulnerability": ["-t", "vulnerabilities"]
+}
+
+
+nuclei_template_choices = list(NUCLEI_TEMPLATES.keys())
+
 parser.add_argument("target", help="Target URL or IP address")
 
 parser.add_argument(
@@ -165,12 +187,20 @@ parser.add_argument(
 parser.add_argument(
     "-l", "--load-config", help="Load a saved scan configuration with the given name"
 )
-parser.add_argument("--nuclei-template", help="Specify a Nuclei template for scanning")
+parser.add_argument(
+    "--nuclei-template",
+    action='store_true',
+    help="Specify a Nuclei template for scanning. Available templates: %(choices)s"
+)
+parser.add_argument(
+    "--nuclei-template-path",
+    help="Specify the path to a custom Nuclei template for scanning",
+)
 
 args = parser.parse_args()
 target = urlparse(args.target).netloc
 
-# REMOVE COMMENTS AND ADD YOUR PROXIES AND GO TO 148 LINE
+# REMOVE COMMENTS, ADD YOUR PROXIES AND GO TO 377 LINE
 # proxies = {
 #     "http": "http://your-http-proxy",
 #     "https": "https://your-https-proxy",
@@ -180,6 +210,27 @@ target = urlparse(args.target).netloc
 cve_pattern = re.compile(r"CVE-\d+-\d+")
 
 cves_found = set()
+
+
+if args.nuclei_template:
+    print("Select a Nuclei template for scanning:")
+    for i, template in enumerate(NUCLEI_TEMPLATES.keys(), start=1):
+        print(f"{i}. {template}")
+
+    user_choice = input("Enter the number of your choice: ")
+
+    try:
+        choice_index = int(user_choice) - 1
+        if 0 <= choice_index < len(NUCLEI_TEMPLATES):
+            selected_template = list(NUCLEI_TEMPLATES.keys())[choice_index]
+            print(f"You selected: {selected_template}")
+            template_args = NUCLEI_TEMPLATES[selected_template]
+        else:
+            print("Invalid choice. Please enter a number corresponding to the options.")
+    except ValueError:
+        print("Invalid input. Please enter a number.")
+else:
+    pass
 
 
 def save_configuration(config_name):
@@ -285,45 +336,64 @@ if args.profile is None:
 
 
 def run_tool(tool, outfile):
-    if tool == "Nuclei" and args.nuclei_template:
-        cmd = [
-            TOOLS[tool]["cmd"],
-            "-t",
-            args.nuclei_template,
-            "-o",
-            outfile,
-            "-u",
-            target,
-        ]
+    if tool == "Nuclei":
+        if args.nuclei_template_path:
+            cmd = [
+                TOOLS[tool]["cmd"],
+                "-t",
+                args.nuclei_template_path,
+                "-o",
+                outfile,
+                "-u",
+                target,
+            ]
+        elif args.nuclei_template:
+            template_args = NUCLEI_TEMPLATES[args.nuclei_template]
+            cmd = [
+                TOOLS[tool]["cmd"],
+                *template_args,
+                "-o",
+                outfile,
+                "-u",
+                target,
+            ]
+        else:
+            cmd = [
+                TOOLS[tool]["cmd"],
+                *TOOLS[tool]["args"],
+                "-u",
+                target,
+            ]
     else:
-        cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
-    try:
-        cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
-        print(f"Running {tool}...")
-        if args.disable != tool:
-            if tool == "custom":
-                cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
-                print(f"Running {tool}...")
-                with open(outfile, "w") as output_file:
-                    subprocess.run(
-                        cmd, stdout=output_file, stderr=output_file, text=True
-                    )
+        try:
+            if tool == "ZAP":
+                cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + ["-quickurl", target]
             else:
                 cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                with open(outfile, "w") as output_file:
-                    output_file.write(result.stdout)
-                if result.returncode != 0:
-                    console.print(f"[red]Error running {tool}: {result.stderr}[/red]")
-    except FileNotFoundError:
-        print(f"The output file {outfile} does not exist.")
-        if args.custom and tool == "custom":
-            with open(outfile, "w"):
-                print(f"Created {outfile} for the custom tool.")
-        else:
-            print(f"Tool {tool} is disabled.")
-    except Exception as e:
-        print(f"An error occurred while running {tool}: {e}")
+            print(f"Running {tool}...")
+            if args.disable != tool:
+                if tool == "custom":
+                    cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + [target]
+                    print(f"Running {tool}...")
+                    with open(outfile, "w") as output_file:
+                        subprocess.run(
+                            cmd, stdout=output_file, stderr=output_file, text=True
+                        )
+                else:
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    with open(outfile, "w") as output_file:
+                        output_file.write(result.stdout)
+                    if result.returncode != 0:
+                        console.print(f"[red]Error running {tool}: {result.stderr}[/red]")
+        except FileNotFoundError:
+            print(f"The output file {outfile} does not exist.")
+            if args.custom and tool == "custom":
+                with open(outfile, "w"):
+                    print(f"Created {outfile} for the custom tool.")
+            else:
+                print(f"Tool {tool} is disabled.")
+        except Exception as e:
+            print(f"An error occurred while running {tool}: {e}")
 
 
 def handle_output(outfile):
@@ -335,7 +405,6 @@ def handle_output(outfile):
                 if "VULNERABLE" in line.upper():
                     issues.append(line.strip())
     except FileNotFoundError:
-        print(f"The output file {outfile} does not exist. Creating it...")
         open(outfile, "w").close()
     return issues
 

@@ -1,10 +1,20 @@
+<div style="text-align:center">
+
 # Automated Vulnerability Scanner 🛡️
 
+
+<img src="https://webz.io/wp-content/uploads/2022/06/img-xss-1-1.png" width="500" height="100">
+
+
 ## Overview 📖
+
+</div>
 
 The Automated Vulnerability Scanner is a comprehensive tool designed to automate the process of analyzing security vulnerabilities in web applications. It integrates popular penetration testing tools such as Nmap, Nuclei, Sqlmap, SSLScan, and DNSRecon, ensuring a thorough security testing process. The scanner is customizable, allowing users to add their own tools, change existing arguments, and select aggressive scanning modes to adapt to their specific environment.
 
 ## Key Features 🚀
+
+### Core Features
 
 - **AI Integration**: The project leverages AI (specifically, the Llama language model) to automate report analysis, providing valuable recommendations and advice on fixing detected vulnerabilities.
 - **Customizable Tools**: Users can customize the AI profile to suit their style and needs, from a friendly mentor to a cyber-specialist or hacker-guru.
@@ -16,10 +26,13 @@ The Automated Vulnerability Scanner is a comprehensive tool designed to automate
 - **Progress Tracking**: A progress bar with time remaining estimation is displayed during the scanning process.
 - **Configuration Management**: Users can save and load scan configurations for future use.
 
-# Todo
-- Fix Nuclei scan configuration
-- Improve UI
-- Implement complex target choice configuration
+## Advanced Features
+
+- **Reputation Scanning**: The scanner can perform a reputation scan using VirusTotal to assess the reputation of the target domain or IP address before proceeding with a full scan.
+- **Custom AI Profiles**: Users can choose from different AI profiles to tailor the AI's analysis and recommendations to their preferred style.
+- **Custom Nuclei Templates**: Users can specify custom Nuclei templates for scanning, allowing for more targeted vulnerability assessments.
+- **Concurrent Scanning**: The scanner can run multiple tools concurrently, significantly reducing the overall scanning time.
+- **AI-Driven Report Analysis**: The AI can analyze the findings from the vulnerability scan and provide insights into potential attack vectors, exploitation techniques, or misconfigurations that could be exploited.
 
 ## How It Works
 
@@ -42,14 +55,9 @@ Users can add their own custom tools to the scanner. This feature allows for the
 To install and use the Automated Vulnerability Scanner, follow these steps:
 
 1. Clone the repository to your local machine.
-2. Install the required dependencies by running `pip install -r requirements.txt`. Also install manually the llama and colored package dependencies.
+2. Install the required dependencies by running `pip install -r requirements.txt`. Also install manually the llama and colored package dependencies. In order to install ZAP run `chmod +x install_zap.sh` and `./install_zap.sh`
 3. Obtain an API key from the Llama language model and save it in a `.env` file or provide it when prompted during runtime.
 4. Run the scanner with the command `python ai.py <target>`, replacing `<target>` with the URL or IP address of the target web application.
-
-## Usage
-
-To use the scanner, run the `ai.py` script with the target URL or IP address as an argument. The scanner will then run the configured security tools and provide an analysis of the findings.
-
 
 ## Usage
 
@@ -104,23 +112,24 @@ To use the scanner, simply run the `ai.py` script with the target URL or IP addr
 ## Screenshots
 
 ![image1.png](img/image1.png)
-![image1.png](img/image2.png)
-![image1.png](img/image4.png)
+![image2.png](img/image2.png)
+![image-console.png](img/console.png)
+![image-general.png](img/console-general.png)
+![image4.png](img/image4.png)
+![template.png](img/blank.png)
 
 
 ## API Keys
 
 To use the AI integration, you will need an API key from Llama. It's very easy to get and will work for quite a while. For this, go here: https://www.llama-api.com/account/api-token. Log in to your account and copy the key. Free tokens are given for $5.
 
-![image1.png](img/image3.png)
+![image3.png](img/image3.png)
 
 ## Advantages
 
 - Automation of the penetration testing process.
 - Intelligent analysis of reports and recommendations for vulnerability remediation.
 - Flexible settings and the ability to adapt to specific needs.
-
-In the code for report analysis, I used the Llama model, open source. 
 
 ### Configuration
 
