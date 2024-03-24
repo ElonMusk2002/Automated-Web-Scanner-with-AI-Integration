@@ -56,7 +56,7 @@ console.print(
               
               
               
-[bold red][bold]Automated Vulnerability Scanner v1.6[/bold][/bold red]
+[bold red][bold]Automated Vulnerability Scanner v1.7[/bold][/bold red]
 [blue][bold]Created by hackeryaroslav (I'm neither a hacker nor Yaroslav, lol)[/bold][/blue]
 [blue][bold]For xss.is[/bold][/blue]
               
@@ -286,8 +286,19 @@ def generate_html_report(findings, ai_response, output_filename):
         with open(TOOLS[tool]["output"], "r") as f:
             tool_outputs[tool] = f.read()
 
+    report_data = []
+    for tool, issues in findings.items():
+        for issue in issues:
+            severity = determine_severity(issue)
+            report_data.append({
+                "tool": tool,
+                "issue": issue,
+                "severity": severity,
+                "remediation": "Apply patch"
+            })
+
     html_content = template.render(
-        findings=findings, ai_response=ai_response, tool_outputs=tool_outputs
+        findings=report_data, ai_response=ai_response, tool_outputs=tool_outputs, SEVERITY_LEVELS=SEVERITY_LEVELS
     )
 
     with open(output_filename, "w") as f:
@@ -397,13 +408,19 @@ def run_tool(tool, outfile):
 
 
 def handle_output(outfile):
-    # Read the output file and extract any vulnerabilities found
     issues = []
     try:
         with open(outfile, "r") as f:
             for line in f:
-                if "VULNERABLE" in line.upper():
-                    issues.append(line.strip())
+                for level, keywords in SEVERITY_LEVELS.items():
+                    for keyword in keywords:
+                        if keyword.lower() in line.lower():
+                            issues.append({"severity": level, "issue": line.strip()})
+                            break
+
+                if "weak" in line.lower() or "potential" in line.lower():
+                    issues.append({"severity": "info", "issue": line.strip()})
+
     except FileNotFoundError:
         open(outfile, "w").close()
     return issues
@@ -670,7 +687,7 @@ def print_results(findings):
             )
 
 
-if __name__ == "__main__":
+def main():
     start_time = time.time()
     if args.custom:
         console.print("[bold green]Adding a custom tool...[/bold green]")
@@ -688,3 +705,6 @@ if __name__ == "__main__":
     console.print(
         f"Scan completed in {end_time - start_time:.2f} seconds", style="bold cyan"
     )
+
+if __name__ == "__main__":
+    main()
