@@ -175,9 +175,9 @@ parser.add_argument("-p", "--prompt", help="Custom AI prompt")
 parser.add_argument(
     "-pr",
     "--profile",
-    choices=["friendly", "special", "hacker", "paranoid"],
+    choices=["friendly", "special", "hacker", "paranoid", "security_expert"],
     default="professional",
-    help="Choose an AI profile: professional, casual, edgy",
+    help="Choose an AI profile: professional, casual, edgy, security_expert",
 )
 parser.add_argument(
     "-s",
@@ -331,6 +331,11 @@ paranoid_expert_profile = AIProfile(
     "You're the paranoid cybersecurity expert seeing threats everywhere. Your analysis wildly speculates possible worst-case scenarios from the findings, while your mitigation advice involves heavy-handed measures like air-gapping, encryption, threat hunting operations centers, and resisting use of all technology.",
 )
 
+security_expert_profile = AIProfile(
+    "security_expert",
+    "You are a seasoned cybersecurity expert with a deep understanding of the latest threats and vulnerabilities. Your analysis should be thorough, focusing on the most critical aspects of the findings. Provide detailed recommendations for mitigation, including specific steps and best practices.",
+)
+
 selected_profile = None
 
 if args.profile == "friendly":
@@ -341,42 +346,44 @@ elif args.profile == "hacker":
     selected_profile = hacker_guru_profile
 elif args.profile == "paranoid":
     selected_profile = paranoid_expert_profile
+elif args.profile == "security_expert":
+    selected_profile = security_expert_profile
 
 if args.profile is None:
     args.profile = "professional"
 
 
 def run_tool(tool, outfile):
-    if tool == "Nuclei":
-        if args.nuclei_template_path:
-            cmd = [
-                TOOLS[tool]["cmd"],
-                "-t",
-                args.nuclei_template_path,
-                "-o",
-                outfile,
-                "-u",
-                target,
-            ]
-        elif args.nuclei_template:
-            template_args = NUCLEI_TEMPLATES[args.nuclei_template]
-            cmd = [
-                TOOLS[tool]["cmd"],
-                *template_args,
-                "-o",
-                outfile,
-                "-u",
-                target,
-            ]
+    try:
+        if tool == "Nuclei":
+            if args.nuclei_template_path:
+                cmd = [
+                    TOOLS[tool]["cmd"],
+                    "-t",
+                    args.nuclei_template_path,
+                    "-o",
+                    outfile,
+                    "-u",
+                    target,
+                ]
+            elif args.nuclei_template:
+                template_args = NUCLEI_TEMPLATES[args.nuclei_template]
+                cmd = [
+                    TOOLS[tool]["cmd"],
+                    *template_args,
+                    "-o",
+                    outfile,
+                    "-u",
+                    target,
+                ]
+            else:
+                cmd = [
+                    TOOLS[tool]["cmd"],
+                    *TOOLS[tool]["args"],
+                    "-u",
+                    target,
+                ]
         else:
-            cmd = [
-                TOOLS[tool]["cmd"],
-                *TOOLS[tool]["args"],
-                "-u",
-                target,
-            ]
-    else:
-        try:
             if tool == "ZAP":
                 cmd = [TOOLS[tool]["cmd"]] + TOOLS[tool]["args"] + ["-quickurl", target]
             else:
@@ -396,15 +403,15 @@ def run_tool(tool, outfile):
                         output_file.write(result.stdout)
                     if result.returncode != 0:
                         console.print(f"[red]Error running {tool}: {result.stderr}[/red]")
-        except FileNotFoundError:
-            print(f"The output file {outfile} does not exist.")
-            if args.custom and tool == "custom":
-                with open(outfile, "w"):
-                    print(f"Created {outfile} for the custom tool.")
-            else:
-                print(f"Tool {tool} is disabled.")
-        except Exception as e:
-            print(f"An error occurred while running {tool}: {e}")
+    except FileNotFoundError:
+        console.print(f"[bold red]Error: The output file {outfile} does not exist. Please check the file path.[/bold red]")
+        if args.custom and tool == "custom":
+            with open(outfile, "w"):
+                print(f"Created {outfile} for the custom tool.")
+        else:
+            console.print(f"Tool {tool} is disabled.")
+    except Exception as e:
+        console.print(f"[bold red]An error occurred while running {tool}: {e}. Please ensure the tool is correctly installed and accessible.[/bold red]")
 
 
 def handle_output(outfile):
