@@ -26,25 +26,28 @@ import re
 
 
 # For Windows systems
-if os.name == 'nt':
+if os.name == "nt":
     import ctypes
 
 
 def clear_terminal():
     # Clear the terminal screen
-    if os.name == 'nt':  # Windows
+    if os.name == "nt":  # Windows
         kernel32 = ctypes.windll.kernel32
         hStdOut = kernel32.GetStdHandle(-11)
 
         kernel32.SetConsoleTextAttribute(hStdOut, 0x07)
 
         kernel32.FillConsoleOutputCharacterA(
-            hStdOut, b' ', ctypes.c_ulong(120 * 30),
+            hStdOut,
+            b" ",
+            ctypes.c_ulong(120 * 30),
             ctypes.pointer(ctypes.c_ulong(0)),
-            ctypes.byref(ctypes.c_ulong(0))
+            ctypes.byref(ctypes.c_ulong(0)),
         )
     else:
-        os.system('clear')
+        os.system("clear")
+
 
 clear_terminal()
 
@@ -110,7 +113,9 @@ def check_tools():
             shutil.which(details["cmd"])
             console.print(f"[green]{tool} is installed ✓[/green]")
         except shutil.Error:
-            console.print(f"[red]Tool '{tool}' is not installed. You can install it from https://www.kali.org/tools/{tool}[/red]")
+            console.print(
+                f"[red]Tool '{tool}' is not installed. You can install it from https://www.kali.org/tools/{tool}[/red]"
+            )
             exit(1)
 
 
@@ -145,7 +150,7 @@ NUCLEI_TEMPLATES = {
     "misconfiguration": ["-t", "misconfiguration"],
     "path-traversal": ["-t", "path-traversal"],
     "subdomain-takeover": ["-t", "subdomain-takeover"],
-    "vulnerability": ["-t", "vulnerabilities"]
+    "vulnerability": ["-t", "vulnerabilities"],
 }
 
 
@@ -189,8 +194,8 @@ parser.add_argument(
 )
 parser.add_argument(
     "--nuclei-template",
-    action='store_true',
-    help="Specify a Nuclei template for scanning. Available templates: %(choices)s"
+    action="store_true",
+    help="Specify a Nuclei template for scanning. Available templates: %(choices)s",
 )
 parser.add_argument(
     "--nuclei-template-path",
@@ -290,15 +295,20 @@ def generate_html_report(findings, ai_response, output_filename):
     for tool, issues in findings.items():
         for issue in issues:
             severity = determine_severity(issue)
-            report_data.append({
-                "tool": tool,
-                "issue": issue,
-                "severity": severity,
-                "remediation": "Apply patch"
-            })
+            report_data.append(
+                {
+                    "tool": tool,
+                    "issue": issue,
+                    "severity": severity,
+                    "remediation": "Apply patch",
+                }
+            )
 
     html_content = template.render(
-        findings=report_data, ai_response=ai_response, tool_outputs=tool_outputs, SEVERITY_LEVELS=SEVERITY_LEVELS
+        findings=report_data,
+        ai_response=ai_response,
+        tool_outputs=tool_outputs,
+        SEVERITY_LEVELS=SEVERITY_LEVELS,
     )
 
     with open(output_filename, "w") as f:
@@ -402,16 +412,22 @@ def run_tool(tool, outfile):
                     with open(outfile, "w") as output_file:
                         output_file.write(result.stdout)
                     if result.returncode != 0:
-                        console.print(f"[red]Error running {tool}: {result.stderr}[/red]")
+                        console.print(
+                            f"[red]Error running {tool}: {result.stderr}[/red]"
+                        )
     except FileNotFoundError:
-        console.print(f"[bold red]Error: The output file {outfile} does not exist. Please check the file path.[/bold red]")
+        console.print(
+            f"[bold red]Error: The output file {outfile} does not exist. Please check the file path.[/bold red]"
+        )
         if args.custom and tool == "custom":
             with open(outfile, "w"):
                 print(f"Created {outfile} for the custom tool.")
         else:
             console.print(f"Tool {tool} is disabled.")
     except Exception as e:
-        console.print(f"[bold red]An error occurred while running {tool}: {e}. Please ensure the tool is correctly installed and accessible.[/bold red]")
+        console.print(
+            f"[bold red]An error occurred while running {tool}: {e}. Please ensure the tool is correctly installed and accessible.[/bold red]"
+        )
 
 
 def handle_output(outfile):
@@ -436,9 +452,21 @@ def handle_output(outfile):
 def add_custom_tool():
     try:
         custom_tool = input("Enter the name of your custom tool: ")
+        if not custom_tool:
+            print("Tool name cannot be empty.")
+            return
         custom_cmd = input(f"Enter the command for {custom_tool}: ")
+        if not custom_cmd:
+            print("Command cannot be empty.")
+            return
         custom_url = input(f"Enter the URL to scan with {custom_tool}: ")
+        if not custom_url:
+            print("URL cannot be empty.")
+            return
         custom_output = input(f"Enter the desired output file name for {custom_tool}: ")
+        if not custom_output:
+            print("Output file name cannot be empty.")
+            return
         TOOLS[custom_tool] = {
             "cmd": custom_cmd.split(),
             "args": [custom_url],
@@ -712,6 +740,7 @@ def main():
     console.print(
         f"Scan completed in {end_time - start_time:.2f} seconds", style="bold cyan"
     )
+
 
 if __name__ == "__main__":
     main()
