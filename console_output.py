@@ -9,9 +9,8 @@ def print_banner():
               
               
 [bold red][bold]Automated Vulnerability Scanner v1.7[/bold][/bold red]
-[blue][bold]Automated Vulnerability Scanner[/bold][/blue]
-[blue][bold]For xss.is[/bold][/blue]
-              
+    [blue][bold]Automated Vulnerability Scanner[/bold][/blue]
+        [blue][bold]For xss.is[/bold][/blue]
 _______           _______ _________ _______  _______             _______  ______     _______  _______  _______  _        _        _______  _______ 
 (  ____ \\|\\     /|(  ____ \\\\__   __/(  ___  )(       )  |\\     /|(  ____ \\(  ___ \\   (  ____ \\(  ____ \\(  ___  )( (    /|( (    /|(  ____ \\(  ____ )
 | (    \\/| )   ( || (    \\/   ) (   | (   ) || () () |  | )   ( || (    \\/| (   ) )  | (    \\/| (    \\/| (   ) ||  \\  ( ||  \\  ( || (    \\/| (    )|
